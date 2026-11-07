@@ -24,6 +24,27 @@
     });
   });
 
+  // 현장 소리: 누를 때만 재생(자동 재생 아님), 켠 상태·위치를 기억해 다음 페이지에서 이어감
+  var snd = document.querySelector('.snd');
+  if (snd) {
+    var au = null, want = false;
+    try { want = sessionStorage.getItem('snd') === '1'; } catch (e) {}
+    var mark = function (on) {
+      snd.classList.toggle('on', on); snd.setAttribute('aria-pressed', on); snd.setAttribute('aria-label', on ? '현장 소리 끄기' : '현장 소리 켜기');
+      try { sessionStorage.setItem('snd', on ? '1' : '0'); } catch (e) {}
+    };
+    var play = function () {
+      if (!au) {
+        au = new Audio(snd.dataset.src); au.loop = true; au.volume = .6;
+        try { au.currentTime = +sessionStorage.getItem('sndT') || 0; } catch (e) {}
+        addEventListener('pagehide', function () { try { sessionStorage.setItem('sndT', au.currentTime); } catch (e) {} });
+      }
+      au.play().then(function () { mark(true); }).catch(function () { mark(false); });
+    };
+    snd.addEventListener('click', function () { if (au && !au.paused) { au.pause(); mark(false); } else play(); });
+    if (want) play(); // 앞 페이지에서 켰으면 이어서 — 브라우저가 막으면 꺼진 표시로 남김
+  }
+
   var lb = document.querySelector('dialog.lb');
   if (lb) {
     var img = lb.querySelector('img');

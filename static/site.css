@@ -53,6 +53,12 @@ section+section{border-top:1px solid var(--line)}
 .top .btn{min-height:42px;padding:0 22px;font-size:12px}
 .burger{display:inline-flex;align-items:center;gap:10px;background:none;border:0;color:inherit;height:44px;padding:0;cursor:pointer;font:inherit;font-size:12px;letter-spacing:.08em;font-weight:500;justify-self:start}
 .burger svg{width:22px;height:22px}
+.top .right{display:flex;align-items:center;gap:12px}
+.snd{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border:1px solid currentColor;border-radius:50%;background:none;color:inherit;cursor:pointer;opacity:.8;transition:opacity .2s}
+.snd:hover,.snd.on{opacity:1}
+.snd svg{width:18px;height:18px}
+.snd .w{opacity:0;transition:opacity .3s}
+.snd.on .w{opacity:1}
 .sheet{position:fixed;inset:0;z-index:55;width:100%;height:100%;max-width:none;max-height:none;margin:0;border:0;color:var(--ink);background:var(--bg);padding:100px var(--pad) 40px;display:none;flex-direction:column;gap:6px}
 .sheet[open]{display:flex}
 .sheet a{font-family:var(--serif);font-size:clamp(28px,4vw,44px);font-weight:300;padding:12px 0;border-bottom:1px solid var(--line)}

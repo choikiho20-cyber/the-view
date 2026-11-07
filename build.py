@@ -101,6 +101,9 @@ ico_pin = ICON.format('<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/
 ico_cal = ICON.format('<rect x="3" y="4" width="18" height="18"/><path d="M16 2v4M8 2v4M3 10h18"/>')
 ico_menu = ICON.format('<path d="M3 7h18M3 12h18M3 17h18"/>')
 ico_x = ICON.format('<path d="M6 6l12 12M18 6L6 18"/>')
+ico_snd = ICON.format('<path d="M11 5 6 9H2v6h4l5 4z"/><g class="w"><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></g>')
+# 현장 소리(static/ambient.mp3)가 있을 때만 상단에 스피커 버튼 — 자동 재생 아님, 누를 때만 내려받아 재생
+snd_btn = f'<button class="snd" type="button" data-src="{base}/ambient.mp3" aria-pressed="false" aria-label="현장 소리 켜기">{ico_snd}</button>' if (ROOT / "static" / "ambient.mp3").exists() else ""
 mark = (ROOT / "static" / "favicon.svg").read_text(encoding="utf-8").strip().replace("<svg ", '<svg aria-hidden="true" ', 1)
 
 TOPICS = cfg.get("topics", [])  # 주제별 페이지(유리온실·정원·바비큐) — 검색어 하나에 주소 하나
@@ -153,7 +156,7 @@ def page(path, title, description, body, lds, og_title=None, extra="", preload="
         verify="".join(f'<meta name="{k}" content="{cfg[c]}">' for k, c in (("google-site-verification", "google_verify"), ("naver-site-verification", "naver_verify")) if cfg[c]),
         css_v=css_v, js_v=js_v, preload=preload, ld=ld(*lds),
         ga4=(f'<script async src="https://www.googletagmanager.com/gtag/js?id={cfg["ga4"]}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){{dataLayer.push(arguments)}}gtag("js",new Date());gtag("config","{cfg["ga4"]}");</script>') if cfg["ga4"] else "",
-        mark=mark, menu=menu, ico_menu=ico_menu, ico_x=ico_x, ico_pin=ico_pin,
+        mark=mark, menu=menu, ico_menu=ico_menu, ico_x=ico_x, ico_pin=ico_pin, snd=snd_btn,
         body=body, addr=escape(addr), checkin=cfg["checkin"], checkout=cfg["checkout"],
         sheet_call=sheet_call, foot_contact=foot_contact, bar=bar,
         foot_menu="".join(f'<li><a href="{base}/{p}">{t}</a></li>' for p, t in MENU),
