@@ -260,6 +260,7 @@ posts_section = (f'<section><div class="wrap"><div class="head rv"><h2>소식</h
 index_body = fill((T / "index.html").read_text(encoding="utf-8"), dict(
     hero_pic=hero_pic, tagline="".join(f"<span><i>{escape(l.strip())}</i></span>" for l in cfg["tagline"].split("|")),
     hero_label=escape(cfg["hero_label"]), hero_sub=escape(cfg["hero_sub"]),
+    notice_html=f'<p class="notice up" style="--d:.3s">{escape(cfg["notice"])}</p>' if cfg.get("notice_on") and cfg.get("notice") else "",
     hero_cap=f'<p class="cap">촬영 예정 자리, AI 시안</p>' if hero in AI and cfg["photos_temporary"] else "",
     name=escape(name), today=today.isoformat(),
     cap_max=cap["max"], cap_base=cap["base"],
@@ -408,6 +409,7 @@ for x in posts:
                {"@type": "ListItem", "position": 1, "name": "홈", "item": f"{base}/"}, {"@type": "ListItem", "position": 2, "name": "소식", "item": f"{base}/blog.html"},
                {"@type": "ListItem", "position": 3, "name": title, "item": url}]}]
     page(f"posts/{x['id']}.html", f"{title} | {name}", desc, body, lds, current="blog.html")
+    (ROOT / "posts").mkdir(exist_ok=True)
     shutil.copy(DIST / "posts" / f"{x['id']}.html", ROOT / "posts" / f"{x['id']}.html")  # 저장소에도 둠 — 글해줌 견본
 blog_body = (f'<div class="page"><div class="wrap phead"><h1>소식</h1><p class="lead">{escape(cfg.get("blog_lead") or "정원의 꽃 소식과 청풍호 계절, 온실에서 차린 상을 적습니다.")}</p></div>'
              f'<section style="padding-top:0;border-top:0"><div class="wrap"><div class="posts">{"".join(post_card(x) for x in posts) or "<p>첫 글을 준비하고 있습니다.</p>"}</div></div></section></div>')
@@ -473,7 +475,7 @@ nl = "\n"
 ## 글 목록
 {nl.join(f"- [{plain(x['title'], 120)}]({base}/posts/{x['id']}.html): {plain(x.get('summary') or x.get('content'), 140)}" for x in posts[:100])}
 """, encoding="utf-8")
-(DIST / "robots.txt").write_text("User-agent: *\nAllow: /\n" + (f"Sitemap: {domain}/sitemap.xml\n" if domain and not noindex else ""), encoding="utf-8")
+(DIST / "robots.txt").write_text("User-agent: *\nAllow: /\nDisallow: /admin.html\n" + (f"Sitemap: {domain}/sitemap.xml\n" if domain and not noindex else ""), encoding="utf-8")
 if domain and not noindex:
     urls = [(f"{domain}/", today)] + [(f"{domain}/{p}", today) for p, _ in MENU] + [(f"{domain}/posts/{x['id']}.html", str(x['date'])[:10]) for x in posts]
     (DIST / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -483,6 +485,10 @@ for k in ROOT.glob("*.txt"):
         shutil.copy(k, DIST / k.name)
 for f in (ROOT / "static").iterdir():
     shutil.copy(f, DIST / f.name)
+# 사장님 관리 화면 — 저장소의 site.config.json·posts.json을 고치면 Actions가 다시 빌드. 비밀번호 잠금 파일은 관리 화면이 저장소 루트에 만든다
+(DIST / "admin.html").write_text(fill((ROOT / "admin.template.html").read_text(encoding="utf-8"), dict(name=escape(name), repo=cfg["repo"], branch=cfg["branch"])), encoding="utf-8")
+if (ROOT / "admin-key.json").exists():
+    shutil.copy(ROOT / "admin-key.json", DIST / "admin-key.json")
 (DIST / ".nojekyll").write_text("", encoding="utf-8")
 
 print(f"완성: {DIST} · 페이지 {len(MENU) + 2}개 · 글 {len(posts)}편")

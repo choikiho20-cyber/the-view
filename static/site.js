@@ -45,6 +45,12 @@
     if (want) play(); // 앞 페이지에서 켰으면 이어서 — 브라우저가 막으면 꺼진 표시로 남김
   }
 
+  // 관리 화면에 들어와 있는 기기에서만: 글 페이지 오른쪽 아래 「이 글 수정」
+  var pm = location.pathname.match(/posts\/(\d+)\.html$/);
+  if (pm && document.querySelector('.blog-post-content')) {
+    try { if (localStorage.getItem('theview_gh_token')) { var ep = document.createElement('a'); ep.className = 'edit-post'; ep.href = '../admin.html#' + pm[1]; ep.textContent = '이 글 수정'; document.body.appendChild(ep); } } catch (e) {}
+  }
+
   var lb = document.querySelector('dialog.lb');
   if (lb) {
     var img = lb.querySelector('img');
