@@ -103,7 +103,8 @@ ico_menu = ICON.format('<path d="M3 7h18M3 12h18M3 17h18"/>')
 ico_x = ICON.format('<path d="M6 6l12 12M18 6L6 18"/>')
 mark = (ROOT / "static" / "favicon.svg").read_text(encoding="utf-8").strip().replace("<svg ", '<svg aria-hidden="true" ', 1)
 
-MENU = [("house.html", "두 채"), ("gathering.html", "모임"), ("pet.html", "반려견"), ("guide.html", "이용 안내"), ("around.html", "오시는 길"), ("blog.html", "소식")]
+TOPICS = cfg.get("topics", [])  # 주제별 페이지(유리온실·정원·바비큐) — 검색어 하나에 주소 하나
+MENU = [("house.html", "두 채")] + [(f"{t['slug']}.html", t["menu"]) for t in TOPICS] + [("gathering.html", "모임"), ("pet.html", "반려견"), ("guide.html", "이용 안내"), ("around.html", "오시는 길"), ("blog.html", "소식")]
 sms_href = f"sms:{sms_tel}?&body={quote(cfg['sms_body'])}" if sms_tel else (book1["url"] if book1 else f"{base}/guide.html#book")
 if g["lat"]:
     route_url = f"https://map.kakao.com/link/to/{quote(name)},{g['lat']},{g['lng']}"
@@ -185,6 +186,12 @@ def faq_html(items):
 def faq_ld(items):
     return {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [
         {"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": ans}} for q, ans in items]}
+
+
+def qa_html(items, title="궁금한 것"):
+    """AEO: 소제목은 질문, 바로 아래 첫 문장이 답. HTML 원문에 글자로 남는다."""
+    return (f'<section class="qa"><div class="wrap"><div class="head rv"><h2>{escape(title)}</h2></div><div class="qas">'
+            + "".join(f'<article class="rv"><h3>{escape(q)}</h3><p>{escape(ans)}</p></article>' for q, ans in items) + "</div></div></section>") if items else ""
 
 
 rates_rows = "".join(f'<tr><th>{escape(r)}</th>{"<td>" + escape(v) + "</td>" if v else "<td class=" + chr(34) + "ask" + chr(34) + ">문의</td>"}</tr>' for r, v in cfg["rates"])
@@ -295,10 +302,26 @@ for title, text, stems in cfg["house_rooms"]:
 house_body = (f'<div class="page"><div class="wrap phead"><h1>{escape(cfg["house_title"])}</h1><p class="lead">{escape(cfg["house_lead"])}</p></div>'
               f'<div class="pcover">{img(cov["house"], f"{name} 벽돌집 정면, 주황 기와와 잔디 마당", "100vw", eager=True)}</div>'
               f'<div class="wrap" style="padding-top:clamp(60px,8vw,110px);padding-bottom:clamp(80px,10vw,140px)"><div class="rooms">{rooms_html}</div>'
-              f'<p class="small" style="margin-top:40px">{escape(cfg["house_note"])}</p></div></div>')
+              f'<p class="small" style="margin-top:40px">{escape(cfg["house_note"])}</p></div>{qa_html(cfg.get("house_qa", []), "집에 대해 자주 묻는 것")}</div>')
 page("house.html", f"두 채 | {name}", f"{name}의 벽돌집 거실, 주방, 침실 3개, 욕실 2개와 유리온실 '가든치유', 300평 정원. 두 채를 하루 한 가족이 씁니다.",
-     house_body, [{"@context": "https://schema.org", "@type": "ImageGallery", "name": f"{name} 공간 사진", "url": f"{base}/house.html", "image": gallery}, crumbs("house.html", "두 채")],
+     house_body, [{"@context": "https://schema.org", "@type": "ImageGallery", "name": f"{name} 공간 사진", "url": f"{base}/house.html", "image": gallery}, faq_ld(cfg.get("house_qa", [])), crumbs("house.html", "두 채")],
      extra='<dialog class="lb"><button type="button" aria-label="닫기">×</button><img src="" alt=""></dialog>', current="house.html")
+
+# ── 주제별 페이지: 유리온실·정원·바비큐 (config topics) ─────────────────────
+for tp in TOPICS:
+    path = f"{tp['slug']}.html"
+    tgal = "".join(f'<figure class="rv">{img(s, f"{name} {tp["title"]} {i + 1}", "(min-width: 720px) 33vw, 100vw")}</figure>' for i, s in enumerate(tp["photos"]))
+    tbody = (f'<div class="page"><div class="wrap phead"><h1>{escape(tp["h1"])}</h1><p class="lead">{escape(tp["lead"])}</p></div>'
+             f'<div class="pcover">{img(tp["cover"], tp["cover_alt"], "100vw", eager=True)}</div>'
+             + qa_html(tp["qa"], f"{tp['title']}, 묻고 답하기")
+             + f'<section><div class="wrap"><div class="gl">{tgal}</div></div></section>'
+             f'<section id="book"><div class="wrap"><div class="head rv"><h2>날짜를 먼저 확인하세요</h2><p class="lead">하루 한 가족만 받습니다. 빈 날짜는 예약 채널에서 바로 보입니다.</p></div><div class="book" style="border:1px solid var(--line)"><div class="wrap">{book_form()}</div></div></div></section></div>')
+    page(path, f"{tp['title']} | {name}", tp["description"], tbody,
+         [{"@context": "https://schema.org", "@type": "WebPage", "name": f"{name} {tp['title']}", "url": f"{base}/{path}", "description": tp["description"]},
+          faq_ld(tp["qa"]),
+          {"@context": "https://schema.org", "@type": "ImageGallery", "name": f"{name} {tp['title']} 사진", "url": f"{base}/{path}",
+           "image": [{"@type": "ImageObject", "contentUrl": f"{base}/images/{s}.webp", "name": f"{name} {tp['title']}"} for s in [tp["cover"]] + tp["photos"]]},
+          crumbs(path, tp["menu"])], current=path)
 
 # ── 모임 ─────────────────────────────────────────────────────────────────
 gl = "".join(f'<figure class="rv">{img(s, f"{name} 모임 {i + 1}", "(min-width: 720px) 33vw, 100vw")}</figure>' for i, s in enumerate(gath["photos"]))
@@ -307,17 +330,19 @@ gath_body = (f'<div class="page"><div class="wrap phead"><h1>{escape(gath["title
              f'<div class="wrap" style="padding-top:clamp(40px,5vw,64px)">{ai_note(cov["gathering"])}<div class="seats">{seats_html}</div>'
              f'<ul class="points">{"".join(f"<li>{escape(p)}</li>" for p in gath["points"])}</ul></div>'
              f'<section><div class="wrap"><div class="gl">{gl}</div></div></section>'
-             f'<section id="book"><div class="wrap"><div class="head rv"><h2>모임 날짜를 먼저 잡아 두세요</h2><p class="lead">하루 한 가족이라 주말과 연휴는 일찍 찹니다. 후기에 "1년 전부터 예약해야겠다"는 말이 나올 만큼입니다.</p></div><div class="book" style="border:1px solid var(--line)"><div class="wrap">{book_form()}</div></div></div></section></div>')
+             + qa_html(cfg.get("gathering_qa", []), "모임 전에 묻는 것")
+             + f'<section id="book"><div class="wrap"><div class="head rv"><h2>모임 날짜를 먼저 잡아 두세요</h2><p class="lead">하루 한 가족이라 주말과 연휴는 일찍 찹니다. 후기에 "1년 전부터 예약해야겠다"는 말이 나올 만큼입니다.</p></div><div class="book" style="border:1px solid var(--line)"><div class="wrap">{book_form()}</div></div></div></section></div>')
 page("gathering.html", f"환갑, 칠순, 생일 모임 | {name}", f"{name}에서 열 명까지 모이는 가족 행사. 유리온실에 차리는 생일상과 칠순상, 떠나는 날 아침 가족사진. 하루 한 가족이라 조용히 모입니다.",
-     gath_body, [{"@context": "https://schema.org", "@type": "WebPage", "name": f"{name} 모임 안내", "url": f"{base}/gathering.html", "description": gath["lead"]}, crumbs("gathering.html", "모임")], current="gathering.html")
+     gath_body, [{"@context": "https://schema.org", "@type": "WebPage", "name": f"{name} 모임 안내", "url": f"{base}/gathering.html", "description": gath["lead"]}, faq_ld(cfg.get("gathering_qa", [])), crumbs("gathering.html", "모임")], current="gathering.html")
 
 # ── 반려견 ───────────────────────────────────────────────────────────────
 pet_body = (f'<div class="page"><div class="wrap phead"><h1>{escape(pet["title"])}</h1><p class="lead">{escape(pet["lead"])}</p></div>'
             f'<section style="padding-top:0;border-top:0"><div class="wrap"><div class="split"><figure class="rv">{img(pet["photos"][1], f"{name} 디딤돌 길과 호수", "(min-width: 720px) 45vw, 100vw", eager=True)}</figure>'
             f'<div><dl class="rules rv">{"".join(f"<div><dt>{escape(k)}</dt><dd>{escape(v)}</dd></div>" for k, v in pet["rules"])}</dl><p class="kids rv">{escape(pet["kids"])}</p></div></div></div></section>'
-            f'<section><div class="wrap"><div class="gl">{"".join(f"<figure class=" + chr(34) + "rv" + chr(34) + f">{img(s, f"{name} 정원 {i + 1}", "(min-width: 720px) 33vw, 100vw")}</figure>" for i, s in enumerate(pet["gallery"]))}</div></div></section></div>')
+            f'<section><div class="wrap"><div class="gl">{"".join(f"<figure class=" + chr(34) + "rv" + chr(34) + f">{img(s, f"{name} 정원 {i + 1}", "(min-width: 720px) 33vw, 100vw")}</figure>" for i, s in enumerate(pet["gallery"]))}</div></div></section>'
+            + qa_html(cfg.get("pet_qa", []), "반려견 동반 전에 묻는 것") + "</div>")
 page("pet.html", f"반려견 동반 | {name}", f"{name}은 10kg 이하 반려견 2마리까지 무료로 함께 옵니다. 대문과 울타리가 있는 300평 정원에서 자유롭게, 침실과 침구는 출입하지 않습니다. 고양이는 불가.",
-     pet_body, [{"@context": "https://schema.org", "@type": "WebPage", "name": f"{name} 반려견 안내", "url": f"{base}/pet.html", "description": pet["lead"]}, crumbs("pet.html", "반려견")], current="pet.html")
+     pet_body, [{"@context": "https://schema.org", "@type": "WebPage", "name": f"{name} 반려견 안내", "url": f"{base}/pet.html", "description": pet["lead"]}, faq_ld(cfg.get("pet_qa", [])), crumbs("pet.html", "반려견")], current="pet.html")
 
 # ── 이용 안내 ────────────────────────────────────────────────────────────
 guide_body = (f'<div class="page"><div class="wrap phead"><h1>요금과 이용 안내</h1><p class="lead">기준 인원 {cap["base"]}명, 최대 {cap["max"]}명. 입실 {cfg["checkin"]}, 퇴실 {cfg["checkout"]}. 빈 날짜와 요금은 예약 채널에서 바로 확인됩니다.</p></div>'
@@ -381,7 +406,7 @@ for x in posts:
                {"@type": "ListItem", "position": 3, "name": title, "item": url}]}]
     page(f"posts/{x['id']}.html", f"{title} | {name}", desc, body, lds, current="blog.html")
     shutil.copy(DIST / "posts" / f"{x['id']}.html", ROOT / "posts" / f"{x['id']}.html")  # 저장소에도 둠 — 글해줌 견본
-blog_body = (f'<div class="page"><div class="wrap phead"><h1>소식</h1><p class="lead">정원의 꽃 소식과 청풍호 계절, 온실에서 차린 상을 적습니다.</p></div>'
+blog_body = (f'<div class="page"><div class="wrap phead"><h1>소식</h1><p class="lead">{escape(cfg.get("blog_lead") or "정원의 꽃 소식과 청풍호 계절, 온실에서 차린 상을 적습니다.")}</p></div>'
              f'<section style="padding-top:0;border-top:0"><div class="wrap"><div class="posts">{"".join(post_card(x) for x in posts) or "<p>첫 글을 준비하고 있습니다.</p>"}</div></div></section></div>')
 page("blog.html", f"소식 | {name}", f"{name} 소식과 정원의 꽃, 청풍호 계절 안내 글.", blog_body,
      [{"@context": "https://schema.org", "@type": "CollectionPage", "name": f"{name} 소식", "url": f"{base}/blog.html", "inLanguage": "ko-KR",
@@ -419,6 +444,8 @@ nl = "\n"
 
 ## 두 채
 {nl.join(f"- {t}: {d}" for t, d, _ in cfg['house_rooms'])}
+
+{nl.join(f"## {t['title']}{nl}- {t['lead']}{nl}" + nl.join(f"- Q. {q}{nl}  A. {ans}" for q, ans in t['qa']) for t in TOPICS)}
 
 ## 모임
 - {gath['lead']}

@@ -98,6 +98,12 @@ section+section{border-top:1px solid var(--line)}
 .rating b{font-family:var(--serif);font-weight:400;font-size:34px;color:var(--ink);margin-right:10px;vertical-align:middle}
 .rating a{text-decoration:underline;text-underline-offset:4px;text-decoration-color:var(--line)}
 .rating small{display:block;margin-top:6px;font-size:12px;color:var(--mute)}
+/* 문답: 질문 소제목 + 첫 문장이 답 (AEO) */
+.qas{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,4vw,56px) clamp(28px,5vw,80px);max-width:68em}
+.qas article{border-top:1px solid var(--line);padding-top:18px}
+.qas h3{font-size:clamp(19px,1.7vw,23px);max-width:18em}
+.qas p{margin-top:10px;color:var(--ink2);font-size:16px}
+@media (max-width:719px){.qas{grid-template-columns:1fr}}
 /* 전화 전: 예약 채널 버튼 */
 .ask-links{display:flex;gap:12px;flex-wrap:wrap;padding:26px 0}
 .ask-links .btn{flex:1 1 220px;justify-content:center;min-height:56px}
